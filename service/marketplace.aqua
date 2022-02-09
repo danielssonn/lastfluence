@@ -1,0 +1,10 @@
+module MarketplaceService declares *
+
+data NFTEcho:
+  msg: string
+  reply: string
+
+service MarketplaceService:
+  echo(from: string) -> NFTEcho
+  opensea_fetch() -> string
+  rarible_fetch() -> string
