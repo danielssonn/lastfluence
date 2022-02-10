@@ -5,6 +5,8 @@ data NFTEcho:
   reply: string
 
 service MarketplaceService:
-  echo(from: string) -> NFTEcho
-  opensea_fetch() -> string
-  rarible_fetch() -> string
+  hello(from: string) -> NFTEcho
+  opensea_fetch() -> NFTEcho
+  opensea_fetch_len() -> NFTEcho
+  rarible_fetch() -> NFTEcho
+  rarible_fetch_len() -> NFTEcho
