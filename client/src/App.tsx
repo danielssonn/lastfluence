@@ -4,7 +4,7 @@ import "./App.scss";
 
 import { Fluence } from "@fluencelabs/fluence";
 import { krasnodar } from "@fluencelabs/fluence-network-environment";
-import { registerClientPeer, sayHello, fetchOpenSea, fetchOpenSeaSize, fetchRarible, fetchRaribleSize } from "./_aqua/getting-started";
+import { registerClientPeer, fetchOpenSea, fetchRarible } from "./_aqua/getting-started";
 
 const relayNodes = [krasnodar[0], krasnodar[1], krasnodar[2]];
 
@@ -32,59 +32,29 @@ function App() {
     }
   };
 
-  const helloBtnOnClick = async () => {
-    if (!isConnected) {
-      return;
-    }
-
-    // Using aqua is as easy as calling a javascript funсtion
-    const res = await sayHello(peerIdInput, relayPeerIdInput, { ttl: 99999 });
-    console.log("FINALLY! ", res)
-    setHelloMessage(res);
-  };
-
   const fetchOpenSeaBtnOnClick = async () => {
     if (!isConnected) {
       return;
     }
 
     // Using aqua is as easy as calling a javascript funсtion
-    const res = await fetchOpenSea(peerIdInput, relayPeerIdInput, { ttl: 99999 });
+    const res = await fetchOpenSea(peerIdInput, relayPeerIdInput, 1, 5, { ttl: 99999 });
     console.log("FINALLY! ", res)
     setHelloMessage(res);
   };
 
-  const fetchOpenSeaSizeBtnOnClick = async () => {
-    if (!isConnected) {
-      return;
-    }
 
-    // Using aqua is as easy as calling a javascript funсtion
-    const res = await fetchOpenSeaSize(peerIdInput, relayPeerIdInput, { ttl: 99999 });
-    console.log("FINALLY! ", res)
-    setHelloMessage(res);
-  };
   const fetchRaribleBtnOnClick = async () => {
     if (!isConnected) {
       return;
     }
 
     // Using aqua is as easy as calling a javascript funсtion
-    const res = await fetchRarible(peerIdInput, relayPeerIdInput, { ttl: 99999 });
+    const res = await fetchRarible(peerIdInput, relayPeerIdInput, "", 5, { ttl: 99999 });
     console.log("FINALLY! ", res)
     setHelloMessage(res);
   };
 
-  const fetchRaribleSizeBtnOnClick = async () => {
-    if (!isConnected) {
-      return;
-    }
-
-    // Using aqua is as easy as calling a javascript funсtion
-    const res = await fetchRaribleSize(peerIdInput, relayPeerIdInput, { ttl: 99999 });
-    console.log("FINALLY! ", res)
-    setHelloMessage(res);
-  };
 
   return (
     <div className="App">
@@ -147,16 +117,10 @@ function App() {
                 <button className="btn btn-hello" onClick={fetchOpenSeaBtnOnClick}>
                   Fetch OpenSea NFTs
                 </button>
-                <button className="btn btn-hello" onClick={fetchOpenSeaSizeBtnOnClick}>
-                  Get OpenSea NFT Size
-                </button>
               </div>
               <div className="row">
                 <button className="btn btn-hello" onClick={fetchRaribleBtnOnClick}>
                   Fetch Rarible NFTs
-                </button>
-                <button className="btn btn-hello" onClick={fetchRaribleSizeBtnOnClick}>
-                  Get Rarible NFT Size
                 </button>
               </div>
             </div>

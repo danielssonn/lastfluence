@@ -53,11 +53,8 @@ export function registerClientPeer(...args: any) {
 
 
 export interface MarketplaceServiceDef {
-    hello: (from: string, callParams: CallParams<'from'>) => { msg: string; reply: string; } | Promise<{ msg: string; reply: string; }>;
-    opensea_fetch: (callParams: CallParams<null>) => { msg: string; reply: string; } | Promise<{ msg: string; reply: string; }>;
-    opensea_fetch_len: (callParams: CallParams<null>) => { msg: string; reply: string; } | Promise<{ msg: string; reply: string; }>;
-    rarible_fetch: (callParams: CallParams<null>) => { msg: string; reply: string; } | Promise<{ msg: string; reply: string; }>;
-    rarible_fetch_len: (callParams: CallParams<null>) => { msg: string; reply: string; } | Promise<{ msg: string; reply: string; }>;
+    opensea_fetch: (page: number, page_size: number, callParams: CallParams<'page' | 'page_size'>) => { msg: string; reply: string; } | Promise<{ msg: string; reply: string; }>;
+    rarible_fetch: (continuation: string, size: number, callParams: CallParams<'continuation' | 'size'>) => { msg: string; reply: string; } | Promise<{ msg: string; reply: string; }>;
 }
 export function registerMarketplaceService(serviceId: string, service: MarketplaceServiceDef): void;
 export function registerMarketplaceService(peer: FluencePeer, serviceId: string, service: MarketplaceServiceDef): void;
@@ -69,10 +66,16 @@ export function registerMarketplaceService(...args: any) {
         {
     "functions" : [
         {
-            "functionName" : "hello",
+            "functionName" : "opensea_fetch",
             "argDefs" : [
                 {
-                    "name" : "from",
+                    "name" : "page",
+                    "argType" : {
+                        "tag" : "primitive"
+                    }
+                },
+                {
+                    "name" : "page_size",
                     "argType" : {
                         "tag" : "primitive"
                     }
@@ -83,32 +86,20 @@ export function registerMarketplaceService(...args: any) {
             }
         },
         {
-            "functionName" : "opensea_fetch",
-            "argDefs" : [
-            ],
-            "returnType" : {
-                "tag" : "primitive"
-            }
-        },
-        {
-            "functionName" : "opensea_fetch_len",
-            "argDefs" : [
-            ],
-            "returnType" : {
-                "tag" : "primitive"
-            }
-        },
-        {
             "functionName" : "rarible_fetch",
             "argDefs" : [
-            ],
-            "returnType" : {
-                "tag" : "primitive"
-            }
-        },
-        {
-            "functionName" : "rarible_fetch_len",
-            "argDefs" : [
+                {
+                    "name" : "continuation",
+                    "argType" : {
+                        "tag" : "primitive"
+                    }
+                },
+                {
+                    "name" : "size",
+                    "argType" : {
+                        "tag" : "primitive"
+                    }
+                }
             ],
             "returnType" : {
                 "tag" : "primitive"
@@ -122,233 +113,11 @@ export function registerMarketplaceService(...args: any) {
 // Functions
  
 
-export function fetchOpenSea(
-    targetPeerId: string,
-    targetRelayPeerId: string,
-    config?: {ttl?: number}
-): Promise<string>;
-
-export function fetchOpenSea(
-    peer: FluencePeer,
-    targetPeerId: string,
-    targetRelayPeerId: string,
-    config?: {ttl?: number}
-): Promise<string>;
-
-export function fetchOpenSea(...args: any) {
-
-    let script = `
-                    (xor
-                     (seq
-                      (seq
-                       (seq
-                        (seq
-                         (seq
-                          (seq
-                           (call %init_peer_id% ("getDataSrv" "-relay-") [] -relay-)
-                           (call %init_peer_id% ("getDataSrv" "targetPeerId") [] targetPeerId)
-                          )
-                          (call %init_peer_id% ("getDataSrv" "targetRelayPeerId") [] targetRelayPeerId)
-                         )
-                         (call -relay- ("op" "noop") [])
-                        )
-                        (xor
-                         (seq
-                          (call "12D3KooWFEwNWcHqi9rtsmDhsYcDbRUCDXH84RC4FW6UfsFWaoHi" ("7f792f0b-8e9b-4b6d-90f7-bd6461e84d1d" "opensea_fetch") [] comp)
-                          (call targetRelayPeerId ("op" "noop") [])
-                         )
-                         (seq
-                          (seq
-                           (seq
-                            (call -relay- ("op" "noop") [])
-                            (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 1])
-                           )
-                           (call -relay- ("op" "noop") [])
-                          )
-                          (call targetRelayPeerId ("op" "noop") [])
-                         )
-                        )
-                       )
-                       (xor
-                        (seq
-                         (seq
-                          (par
-                           (call targetPeerId ("ClientPeer" "hello") [%init_peer_id%])
-                           (null)
-                          )
-                          (call targetRelayPeerId ("op" "noop") [])
-                         )
-                         (call -relay- ("op" "noop") [])
-                        )
-                        (seq
-                         (seq
-                          (call targetRelayPeerId ("op" "noop") [])
-                          (call -relay- ("op" "noop") [])
-                         )
-                         (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 2])
-                        )
-                       )
-                      )
-                      (xor
-                       (call %init_peer_id% ("callbackSrv" "response") [comp.$.reply!])
-                       (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 3])
-                      )
-                     )
-                     (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 4])
-                    )
-    `
-    return callFunction(
-        args,
-        {
-    "functionName" : "fetchOpenSea",
-    "returnType" : {
-        "tag" : "primitive"
-    },
-    "argDefs" : [
-        {
-            "name" : "targetPeerId",
-            "argType" : {
-                "tag" : "primitive"
-            }
-        },
-        {
-            "name" : "targetRelayPeerId",
-            "argType" : {
-                "tag" : "primitive"
-            }
-        }
-    ],
-    "names" : {
-        "relay" : "-relay-",
-        "getDataSrv" : "getDataSrv",
-        "callbackSrv" : "callbackSrv",
-        "responseSrv" : "callbackSrv",
-        "responseFnName" : "response",
-        "errorHandlingSrv" : "errorHandlingSrv",
-        "errorFnName" : "error"
-    }
-},
-        script
-    )
-}
-
- 
-
-export function sayHello(
-    targetPeerId: string,
-    targetRelayPeerId: string,
-    config?: {ttl?: number}
-): Promise<string>;
-
-export function sayHello(
-    peer: FluencePeer,
-    targetPeerId: string,
-    targetRelayPeerId: string,
-    config?: {ttl?: number}
-): Promise<string>;
-
-export function sayHello(...args: any) {
-
-    let script = `
-                    (xor
-                     (seq
-                      (seq
-                       (seq
-                        (seq
-                         (seq
-                          (seq
-                           (call %init_peer_id% ("getDataSrv" "-relay-") [] -relay-)
-                           (call %init_peer_id% ("getDataSrv" "targetPeerId") [] targetPeerId)
-                          )
-                          (call %init_peer_id% ("getDataSrv" "targetRelayPeerId") [] targetRelayPeerId)
-                         )
-                         (call -relay- ("op" "noop") [])
-                        )
-                        (xor
-                         (seq
-                          (call "12D3KooWFEwNWcHqi9rtsmDhsYcDbRUCDXH84RC4FW6UfsFWaoHi" ("7f792f0b-8e9b-4b6d-90f7-bd6461e84d1d" "hello") ["With love"] comp)
-                          (call targetRelayPeerId ("op" "noop") [])
-                         )
-                         (seq
-                          (seq
-                           (seq
-                            (call -relay- ("op" "noop") [])
-                            (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 1])
-                           )
-                           (call -relay- ("op" "noop") [])
-                          )
-                          (call targetRelayPeerId ("op" "noop") [])
-                         )
-                        )
-                       )
-                       (xor
-                        (seq
-                         (seq
-                          (par
-                           (call targetPeerId ("ClientPeer" "hello") [%init_peer_id%])
-                           (null)
-                          )
-                          (call targetRelayPeerId ("op" "noop") [])
-                         )
-                         (call -relay- ("op" "noop") [])
-                        )
-                        (seq
-                         (seq
-                          (call targetRelayPeerId ("op" "noop") [])
-                          (call -relay- ("op" "noop") [])
-                         )
-                         (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 2])
-                        )
-                       )
-                      )
-                      (xor
-                       (call %init_peer_id% ("callbackSrv" "response") [comp.$.reply!])
-                       (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 3])
-                      )
-                     )
-                     (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 4])
-                    )
-    `
-    return callFunction(
-        args,
-        {
-    "functionName" : "sayHello",
-    "returnType" : {
-        "tag" : "primitive"
-    },
-    "argDefs" : [
-        {
-            "name" : "targetPeerId",
-            "argType" : {
-                "tag" : "primitive"
-            }
-        },
-        {
-            "name" : "targetRelayPeerId",
-            "argType" : {
-                "tag" : "primitive"
-            }
-        }
-    ],
-    "names" : {
-        "relay" : "-relay-",
-        "getDataSrv" : "getDataSrv",
-        "callbackSrv" : "callbackSrv",
-        "responseSrv" : "callbackSrv",
-        "responseFnName" : "response",
-        "errorHandlingSrv" : "errorHandlingSrv",
-        "errorFnName" : "error"
-    }
-},
-        script
-    )
-}
-
- 
-
 export function fetchRarible(
     targetPeerId: string,
     targetRelayPeerId: string,
+    continuation: string,
+    size: number,
     config?: {ttl?: number}
 ): Promise<string>;
 
@@ -356,6 +125,8 @@ export function fetchRarible(
     peer: FluencePeer,
     targetPeerId: string,
     targetRelayPeerId: string,
+    continuation: string,
+    size: number,
     config?: {ttl?: number}
 ): Promise<string>;
 
@@ -369,16 +140,22 @@ export function fetchRarible(...args: any) {
                         (seq
                          (seq
                           (seq
-                           (call %init_peer_id% ("getDataSrv" "-relay-") [] -relay-)
-                           (call %init_peer_id% ("getDataSrv" "targetPeerId") [] targetPeerId)
+                           (seq
+                            (seq
+                             (call %init_peer_id% ("getDataSrv" "-relay-") [] -relay-)
+                             (call %init_peer_id% ("getDataSrv" "targetPeerId") [] targetPeerId)
+                            )
+                            (call %init_peer_id% ("getDataSrv" "targetRelayPeerId") [] targetRelayPeerId)
+                           )
+                           (call %init_peer_id% ("getDataSrv" "continuation") [] continuation)
                           )
-                          (call %init_peer_id% ("getDataSrv" "targetRelayPeerId") [] targetRelayPeerId)
+                          (call %init_peer_id% ("getDataSrv" "size") [] size)
                          )
                          (call -relay- ("op" "noop") [])
                         )
                         (xor
                          (seq
-                          (call "12D3KooWFEwNWcHqi9rtsmDhsYcDbRUCDXH84RC4FW6UfsFWaoHi" ("7f792f0b-8e9b-4b6d-90f7-bd6461e84d1d" "rarible_fetch") [] comp)
+                          (call "12D3KooWFEwNWcHqi9rtsmDhsYcDbRUCDXH84RC4FW6UfsFWaoHi" ("4423f13c-ea6c-4012-894d-8bed346bdf40" "rarible_fetch") [continuation size] comp)
                           (call targetRelayPeerId ("op" "noop") [])
                          )
                          (seq
@@ -440,6 +217,18 @@ export function fetchRarible(...args: any) {
             "argType" : {
                 "tag" : "primitive"
             }
+        },
+        {
+            "name" : "continuation",
+            "argType" : {
+                "tag" : "primitive"
+            }
+        },
+        {
+            "name" : "size",
+            "argType" : {
+                "tag" : "primitive"
+            }
         }
     ],
     "names" : {
@@ -458,20 +247,24 @@ export function fetchRarible(...args: any) {
 
  
 
-export function fetchRaribleSize(
+export function fetchOpenSea(
     targetPeerId: string,
     targetRelayPeerId: string,
+    page: number,
+    page_size: number,
     config?: {ttl?: number}
 ): Promise<string>;
 
-export function fetchRaribleSize(
+export function fetchOpenSea(
     peer: FluencePeer,
     targetPeerId: string,
     targetRelayPeerId: string,
+    page: number,
+    page_size: number,
     config?: {ttl?: number}
 ): Promise<string>;
 
-export function fetchRaribleSize(...args: any) {
+export function fetchOpenSea(...args: any) {
 
     let script = `
                     (xor
@@ -481,16 +274,22 @@ export function fetchRaribleSize(...args: any) {
                         (seq
                          (seq
                           (seq
-                           (call %init_peer_id% ("getDataSrv" "-relay-") [] -relay-)
-                           (call %init_peer_id% ("getDataSrv" "targetPeerId") [] targetPeerId)
+                           (seq
+                            (seq
+                             (call %init_peer_id% ("getDataSrv" "-relay-") [] -relay-)
+                             (call %init_peer_id% ("getDataSrv" "targetPeerId") [] targetPeerId)
+                            )
+                            (call %init_peer_id% ("getDataSrv" "targetRelayPeerId") [] targetRelayPeerId)
+                           )
+                           (call %init_peer_id% ("getDataSrv" "page") [] page)
                           )
-                          (call %init_peer_id% ("getDataSrv" "targetRelayPeerId") [] targetRelayPeerId)
+                          (call %init_peer_id% ("getDataSrv" "page_size") [] page_size)
                          )
                          (call -relay- ("op" "noop") [])
                         )
                         (xor
                          (seq
-                          (call "12D3KooWFEwNWcHqi9rtsmDhsYcDbRUCDXH84RC4FW6UfsFWaoHi" ("7f792f0b-8e9b-4b6d-90f7-bd6461e84d1d" "rarible_fetch_len") [] comp)
+                          (call "12D3KooWFEwNWcHqi9rtsmDhsYcDbRUCDXH84RC4FW6UfsFWaoHi" ("4423f13c-ea6c-4012-894d-8bed346bdf40" "opensea_fetch") [page page_size] comp)
                           (call targetRelayPeerId ("op" "noop") [])
                          )
                          (seq
@@ -536,7 +335,7 @@ export function fetchRaribleSize(...args: any) {
     return callFunction(
         args,
         {
-    "functionName" : "fetchRaribleSize",
+    "functionName" : "fetchOpenSea",
     "returnType" : {
         "tag" : "primitive"
     },
@@ -552,115 +351,15 @@ export function fetchRaribleSize(...args: any) {
             "argType" : {
                 "tag" : "primitive"
             }
-        }
-    ],
-    "names" : {
-        "relay" : "-relay-",
-        "getDataSrv" : "getDataSrv",
-        "callbackSrv" : "callbackSrv",
-        "responseSrv" : "callbackSrv",
-        "responseFnName" : "response",
-        "errorHandlingSrv" : "errorHandlingSrv",
-        "errorFnName" : "error"
-    }
-},
-        script
-    )
-}
-
- 
-
-export function fetchOpenSeaSize(
-    targetPeerId: string,
-    targetRelayPeerId: string,
-    config?: {ttl?: number}
-): Promise<string>;
-
-export function fetchOpenSeaSize(
-    peer: FluencePeer,
-    targetPeerId: string,
-    targetRelayPeerId: string,
-    config?: {ttl?: number}
-): Promise<string>;
-
-export function fetchOpenSeaSize(...args: any) {
-
-    let script = `
-                    (xor
-                     (seq
-                      (seq
-                       (seq
-                        (seq
-                         (seq
-                          (seq
-                           (call %init_peer_id% ("getDataSrv" "-relay-") [] -relay-)
-                           (call %init_peer_id% ("getDataSrv" "targetPeerId") [] targetPeerId)
-                          )
-                          (call %init_peer_id% ("getDataSrv" "targetRelayPeerId") [] targetRelayPeerId)
-                         )
-                         (call -relay- ("op" "noop") [])
-                        )
-                        (xor
-                         (seq
-                          (call "12D3KooWFEwNWcHqi9rtsmDhsYcDbRUCDXH84RC4FW6UfsFWaoHi" ("7f792f0b-8e9b-4b6d-90f7-bd6461e84d1d" "opensea_fetch_len") [] comp)
-                          (call targetRelayPeerId ("op" "noop") [])
-                         )
-                         (seq
-                          (seq
-                           (seq
-                            (call -relay- ("op" "noop") [])
-                            (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 1])
-                           )
-                           (call -relay- ("op" "noop") [])
-                          )
-                          (call targetRelayPeerId ("op" "noop") [])
-                         )
-                        )
-                       )
-                       (xor
-                        (seq
-                         (seq
-                          (par
-                           (call targetPeerId ("ClientPeer" "hello") [%init_peer_id%])
-                           (null)
-                          )
-                          (call targetRelayPeerId ("op" "noop") [])
-                         )
-                         (call -relay- ("op" "noop") [])
-                        )
-                        (seq
-                         (seq
-                          (call targetRelayPeerId ("op" "noop") [])
-                          (call -relay- ("op" "noop") [])
-                         )
-                         (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 2])
-                        )
-                       )
-                      )
-                      (xor
-                       (call %init_peer_id% ("callbackSrv" "response") [comp.$.reply!])
-                       (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 3])
-                      )
-                     )
-                     (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 4])
-                    )
-    `
-    return callFunction(
-        args,
+        },
         {
-    "functionName" : "fetchOpenSeaSize",
-    "returnType" : {
-        "tag" : "primitive"
-    },
-    "argDefs" : [
-        {
-            "name" : "targetPeerId",
+            "name" : "page",
             "argType" : {
                 "tag" : "primitive"
             }
         },
         {
-            "name" : "targetRelayPeerId",
+            "name" : "page_size",
             "argType" : {
                 "tag" : "primitive"
             }
